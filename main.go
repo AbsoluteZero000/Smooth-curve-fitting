@@ -179,9 +179,13 @@ func start() {
 
 		selectionPool := tournamentSelection(population, selectionSize, points)
 
-		fmt.Print(selectionPool)
+		crossedOverPool := crossOver(selectionPool)
+		for i := 0; i < len(selectionPool); i++ {
+			for j := 0; j < len(selectionPool[0]); j++ {
 
-
+				fmt.Println(crossedOverPool[i][j], " : ", selectionPool[i][j])
+			}
+		}
 	}
 }
 
