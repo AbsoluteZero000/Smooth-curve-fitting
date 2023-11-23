@@ -100,14 +100,15 @@ func bestIndividual(individuals [][]float64, points [][]int) []float64 {
 	return individuals[bestIndex]
 }
 
-// /////////////////////////////// Cross Over //////////////////////////////////
+// /////////////////////////////// N-Point Cross Over //////////////////////////////////
 func crossOver(selected [][]float64) [][]float64 {
 	Pc := 0.75
 	n := 2
 
 	for i := 0; i < len(selected); i += 2 {
+		rn := rand.Float64()
+		if rn < Pc {
 
-		if rand.Float64() < Pc {
 			crossoverPoints := make([]int, n)
 			for j := 0; j < n; j++ {
 				crossoverPoints[j] = rand.Intn(len(selected[i]))
@@ -125,6 +126,7 @@ func crossOver(selected [][]float64) [][]float64 {
 				} else {
 					child1[j] = selected[i+1][j]
 					child2[j] = selected[i][j]
+
 				}
 
 				for k := 0; k < n-1; k++ {
@@ -136,6 +138,7 @@ func crossOver(selected [][]float64) [][]float64 {
 			}
 
 			selected[i] = child1
+
 			selected[i+1] = child2
 		}
 	}
@@ -143,9 +146,49 @@ func crossOver(selected [][]float64) [][]float64 {
 	return selected
 }
 
+/////////////////////////////// Non-Uniform Mutation //////////////////////////////
+
+func mutation(selected [][]float64, lowerBound int, upperBound int, generation int, maxGeneration int) [][]float64 {
+	Pm := 0.05
+	beta := 5.0
+
+	for i := 0; i < len(selected); i++ {
+		for j := 0; j < len(selected[i]); j++ {
+			rn := rand.Float64()
+			if rn < Pm { // move down inside the loop
+				fmt.Print(selected[i][j])
+				r := rand.Float64()
+				delta := 0.0
+
+				if r < 0.5 {
+					delta = selected[i][j] - float64(lowerBound)
+				} else {
+					delta = float64(upperBound) - selected[i][j]
+				}
+
+				r = rand.Float64()
+				delta *= (1 - math.Pow(r, math.Pow(1-float64(generation)/float64(maxGeneration), beta)))
+
+				selected[i][j] = selected[i][j] + delta
+				fmt.Print(" -> ", selected[i][j], "\n")
+			}
+		}
+	}
+
+	return selected
+}
+
+/////////////////////// Elitist Replacement ////////////////////////
+
+func Replacement(selected [][]float64, popSize int) [][]float64 {
+	return selected
+}
 func start() {
+	maxGeneration := 1
 	popSize := 50
 	selectionSize := 10
+	lowerBound := -10
+	upperBound := 10
 
 	dat, err := os.ReadFile("input.txt")
 	check(err)
@@ -177,14 +220,13 @@ func start() {
 
 		population := initialize(points, degree, popSize)
 
-		selectionPool := tournamentSelection(population, selectionSize, points)
+		for j := 0; j < maxGeneration; j++ {
+			selectionPool := tournamentSelection(population, selectionSize, points)
 
-		crossedOverPool := crossOver(selectionPool)
-		for i := 0; i < len(selectionPool); i++ {
-			for j := 0; j < len(selectionPool[0]); j++ {
+			crossedOverPool := crossOver(selectionPool)
+			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
+			fmt.Println("\n", mutatedPool)
 
-				fmt.Println(crossedOverPool[i][j], " : ", selectionPool[i][j])
-			}
 		}
 	}
 }
