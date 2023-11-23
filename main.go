@@ -2,42 +2,205 @@ package main
 
 import (
 	"fmt"
-	_ "fmt"
-	_ "log"
+	"math"
 	"math/rand"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
 
+// /////////////////////////////// Utility Functions //////////////////////////////
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
-func randFloats(min, max float64, n int) []float64 {
-	res := make([]float64, n)
-	for i := range res {
-		res[i] = min + rand.Float64()*(max-min)
+
+func calculatePolynomial(x float64, coefficients []float64) float64 {
+	sum := 0.0
+	for i := 0; i < len(coefficients); i++ {
+		sum += coefficients[i] * math.Pow(x, float64(i))
 	}
-	return res
+	return sum
 }
 
+func fitnessFunction(coefficients []float64, points [][]int) float64 {
+	totalError := 0.0
+	N := float64(len(points))
+
+	for _, point := range points {
+		x := float64(point[0])
+		yActual := float64(point[1])
+		yCalc := calculatePolynomial(x, coefficients)
+		error := math.Pow(yCalc-yActual, 2)
+
+		totalError += error
+	}
+
+	mse := totalError / N
+
+	fitness := 1.0 / mse
+
+	return fitness
+}
+
+// /////////////////////////////// Population initialization //////////////////////////////////
+func initialize(points [][]int, degree int, popSize int) [][]float64 {
+
+	population := make([][]float64, popSize)
+	for i := 0; i < popSize; i++ {
+		individual := make([]float64, degree+1)
+
+		for j := 0; j <= degree; j++ {
+			individual[j] = -10 + rand.Float64()*(20)
+		}
+
+		population[i] = individual
+	}
+
+	return population
+}
+
+// /////////////////////////////// Tournament Selection /////////////////////////////////
+func tournamentSelection(population [][]float64, selectionSize int, points [][]int) [][]float64 {
+
+	tournamentSize := 2
+	selected := make([][]float64, selectionSize)
+	for i := 0; i < selectionSize; i++ {
+		selected[i] = make([]float64, len(population[0]))
+	}
+
+	for j := 0; j < selectionSize; j++ {
+		arena := make([][]float64, tournamentSize)
+		for i := 0; i < tournamentSize; i++ {
+			arena[i] = make([]float64, len(population[0]))
+
+			index := rand.Intn(len(population))
+			arena[i] = population[index]
+
+		}
+
+		selected[j] = bestIndividual(arena, points)
+	}
+	return selected
+}
+
+func bestIndividual(individuals [][]float64, points [][]int) []float64 {
+	bestIndex := 0
+	bestFitness := fitnessFunction(individuals[0], points)
+
+	for i := 1; i < len(individuals); i++ {
+		fitness := fitnessFunction(individuals[i], points)
+		if fitness > bestFitness {
+			bestFitness = fitness
+			bestIndex = i
+		}
+	}
+	return individuals[bestIndex]
+}
+
+// /////////////////////////////// N-Point Cross Over //////////////////////////////////
+func crossOver(selected [][]float64) [][]float64 {
+	Pc := 0.75
+	n := 2
+
+	for i := 0; i < len(selected); i += 2 {
+		rn := rand.Float64()
+		if rn < Pc {
+
+			crossoverPoints := make([]int, n)
+			for j := 0; j < n; j++ {
+				crossoverPoints[j] = rand.Intn(len(selected[i]))
+			}
+			sort.Ints(crossoverPoints)
+
+			child1 := make([]float64, len(selected[i]))
+			child2 := make([]float64, len(selected[i]))
+
+			flip := false
+			for j := 0; j < len(selected[i]); j++ {
+				if flip {
+					child1[j] = selected[i][j]
+					child2[j] = selected[i+1][j]
+				} else {
+					child1[j] = selected[i+1][j]
+					child2[j] = selected[i][j]
+
+				}
+
+				for k := 0; k < n-1; k++ {
+					if j == crossoverPoints[k] {
+						flip = !flip
+						break
+					}
+				}
+			}
+
+			selected[i] = child1
+
+			selected[i+1] = child2
+		}
+	}
+
+	return selected
+}
+
+/////////////////////////////// Non-Uniform Mutation //////////////////////////////
+
+func mutation(selected [][]float64, lowerBound int, upperBound int, generation int, maxGeneration int) [][]float64 {
+	Pm := 0.05
+	beta := 5.0
+
+	for i := 0; i < len(selected); i++ {
+		for j := 0; j < len(selected[i]); j++ {
+			rn := rand.Float64()
+			if rn < Pm { // move down inside the loop
+				fmt.Print(selected[i][j])
+				r := rand.Float64()
+				delta := 0.0
+
+				if r < 0.5 {
+					delta = selected[i][j] - float64(lowerBound)
+				} else {
+					delta = float64(upperBound) - selected[i][j]
+				}
+
+				r = rand.Float64()
+				delta *= (1 - math.Pow(r, math.Pow(1-float64(generation)/float64(maxGeneration), beta)))
+
+				selected[i][j] = selected[i][j] + delta
+				fmt.Print(" -> ", selected[i][j], "\n")
+			}
+		}
+	}
+
+	return selected
+}
+
+/////////////////////// Elitist Replacement ////////////////////////
+
+func Replacement(selected [][]float64, popSize int) [][]float64 {
+	return selected
+}
 func start() {
+	maxGeneration := 1
+	popSize := 50
+	selectionSize := 10
+	lowerBound := -10
+	upperBound := 10
+
 	dat, err := os.ReadFile("input.txt")
 	check(err)
 	dataArray := strings.Fields(string(dat))
 
 	dataSets, err := strconv.Atoi(dataArray[0])
-
 	check(err)
 
 	for i := 0; i < dataSets; i++ {
-
 		numPoints, err := strconv.Atoi(dataArray[1])
 		check(err)
 
-		//remove this when creating the array of the representation
 		degree, err := strconv.Atoi(dataArray[2])
 		check(err)
 
@@ -47,7 +210,6 @@ func start() {
 		}
 
 		for j := 0; j < numPoints; j++ {
-
 			x, err := strconv.Atoi(dataArray[3+2*j])
 			check(err)
 			y, err := strconv.Atoi(dataArray[4+2*j])
@@ -56,17 +218,17 @@ func start() {
 			points[j][1] = y
 		}
 
-		fmt.Println(points)
-		initialize(points, degree)
+		population := initialize(points, degree, popSize)
 
+		for j := 0; j < maxGeneration; j++ {
+			selectionPool := tournamentSelection(population, selectionSize, points)
+
+			crossedOverPool := crossOver(selectionPool)
+			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
+			fmt.Println("\n", mutatedPool)
+
+		}
 	}
 }
 
-func initialize(points [][]int, degree int) {
-	rep := randFloats(-10, 10, degree+1)
-	fmt.Println(rep)
-
-}
-func main() {
-	start()
-}
+func main() { start() }
