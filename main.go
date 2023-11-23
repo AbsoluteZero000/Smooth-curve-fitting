@@ -170,7 +170,6 @@ func mutation(selected [][]float64, lowerBound int, upperBound int, generation i
 				delta *= (1 - math.Pow(r, math.Pow(1-float64(generation)/float64(maxGeneration), beta)))
 
 				selected[i][j] = selected[i][j] + delta
-				fmt.Print(" -> ", selected[i][j], "\n")
 			}
 		}
 	}
@@ -180,13 +179,51 @@ func mutation(selected [][]float64, lowerBound int, upperBound int, generation i
 
 /////////////////////// Elitist Replacement ////////////////////////
 
-func Replacement(selected [][]float64, popSize int) [][]float64 {
+type TwoSlices struct {
+	chromosomes [][]float64
+	fitnesses   []float64
+}
+
+type SortByOther TwoSlices
+
+func (sbo SortByOther) Len() int {
+	return len(sbo.chromosomes)
+}
+
+func (sbo SortByOther) Swap(i, j int) {
+	sbo.chromosomes[i], sbo.chromosomes[j] = sbo.chromosomes[j], sbo.chromosomes[i]
+	sbo.fitnesses[i], sbo.fitnesses[j] = sbo.fitnesses[j], sbo.fitnesses[i]
+}
+
+func (sbo SortByOther) Less(i, j int) bool {
+	return sbo.fitnesses[i] < sbo.fitnesses[j]
+}
+
+func elitismReplacement(generation [][]float64, copySize int, points [][]int, offSpring [][]float64) [][]float64 {
+	selected := make([][]float64, len(generation))
+	fitnesses := make([]float64, len(generation))
+	for i := 0; i < len(generation); i++ {
+		fitnesses[i] = fitnessFunction(generation[i], points)
+	}
+	population := TwoSlices{chromosomes: generation, fitnesses: fitnesses}
+	sort.Sort(SortByOther(population))
+	j := 0
+	for i := len(generation) - 1; i >= (len(generation) - copySize); i-- {
+		selected[j] = population.chromosomes[i]
+		j++
+	}
+	i := 0
+	for ; j < len(generation); j++ {
+		selected[j] = offSpring[i]
+		i++
+	}
 	return selected
 }
 func start() {
 	maxGeneration := 1
 	popSize := 50
-	selectionSize := 10
+	selectionSize := 0.8 * float64(popSize)
+	copiedParentsSize := popSize - int(selectionSize)
 	lowerBound := -10
 	upperBound := 10
 
@@ -221,13 +258,14 @@ func start() {
 		population := initialize(points, degree, popSize)
 
 		for j := 0; j < maxGeneration; j++ {
-			selectionPool := tournamentSelection(population, selectionSize, points)
+			selectionPool := tournamentSelection(population, int(selectionSize), points)
 
 			crossedOverPool := crossOver(selectionPool)
 			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
-			fmt.Println("\n", mutatedPool)
-
+			population = elitismReplacement(population, copiedParentsSize, points, mutatedPool)
 		}
+		fmt.Println(population)
+		fmt.Println(fitnessFunction(population[0], points))
 	}
 }
 
