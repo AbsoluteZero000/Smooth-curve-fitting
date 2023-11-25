@@ -219,10 +219,41 @@ func replacement(generation [][]float64, copySize int, points [][]float64, offSp
 	return selected
 }
 
+func WriteBestIndividualToFile(fileName string, dataSetIndex int, coefficients []float64, mse float64) error {
+	file, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "Data Set Index: %d\n", dataSetIndex)
+	if err != nil {
+		return err
+	}
+
+	for i := len(coefficients) - 1; i > 0; i-- {
+		_, err := fmt.Fprintf(file, "%.6f x^%d + ", coefficients[i], i)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = fmt.Fprintf(file, "%.6f\n", coefficients[0])
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(file, "Mean Square Error: %.6f\n", mse)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // //////////////////////// Main Function ////////////////////////////
 func start() {
-	maxGeneration := 1000
-	popSize := 200
+	maxGeneration := 800
+	popSize := 600
 	selectionSize := 0.8 * float64(popSize)
 	copiedParentsSize := popSize - int(selectionSize)
 	lowerBound := -10
@@ -268,12 +299,13 @@ func start() {
 			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
 			population = replacement(population, copiedParentsSize, points, mutatedPool)
 		}
-		fmt.Println("DATA SET", i+1, "\nBest Individual: ")
-		for j := degree; j > 0; j-- {
-			fmt.Print(population[0][j], " x^", j, " ", "+ ", " ")
-		}
-		fmt.Println(population[0][0])
+		individual := bestIndividual(population, points)
+
+		mse := 1 / fitnessFunction(individual, points)
+
+		WriteBestIndividualToFile("output.txt", i+1, individual, mse)
 	}
+
 }
 
 // /////////////////////////// Start ////////////////////////////////
