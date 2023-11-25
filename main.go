@@ -228,7 +228,7 @@ func start() {
 	lowerBound := -10
 	upperBound := 10
 
-	dat, err := os.ReadFile("input2.txt")
+	dat, err := os.ReadFile("input.txt")
 	check(err)
 	dataArray := strings.Fields(string(dat))
 
