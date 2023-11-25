@@ -25,7 +25,7 @@ func calculatePolynomial(x float64, coefficients []float64) float64 {
 	return sum
 }
 
-func fitnessFunction(coefficients []float64, points [][]int) float64 {
+func fitnessFunction(coefficients []float64, points [][]float64) float64 {
 	totalError := 0.0
 	N := float64(len(points))
 
@@ -46,7 +46,7 @@ func fitnessFunction(coefficients []float64, points [][]int) float64 {
 }
 
 // /////////////////////////////// Population initialization //////////////////////////////////
-func initialize(points [][]int, degree int, popSize int) [][]float64 {
+func initialize(points [][]float64, degree int, popSize int) [][]float64 {
 
 	population := make([][]float64, popSize)
 	for i := 0; i < popSize; i++ {
@@ -63,7 +63,7 @@ func initialize(points [][]int, degree int, popSize int) [][]float64 {
 }
 
 // /////////////////////////////// Tournament Selection /////////////////////////////////
-func tournamentSelection(population [][]float64, selectionSize int, points [][]int) [][]float64 {
+func tournamentSelection(population [][]float64, selectionSize int, points [][]float64) [][]float64 {
 
 	tournamentSize := 2
 	selected := make([][]float64, selectionSize)
@@ -86,7 +86,7 @@ func tournamentSelection(population [][]float64, selectionSize int, points [][]i
 	return selected
 }
 
-func bestIndividual(individuals [][]float64, points [][]int) []float64 {
+func bestIndividual(individuals [][]float64, points [][]float64) []float64 {
 	bestIndex := 0
 	bestFitness := fitnessFunction(individuals[0], points)
 
@@ -155,8 +155,7 @@ func mutation(selected [][]float64, lowerBound int, upperBound int, generation i
 	for i := 0; i < len(selected); i++ {
 		for j := 0; j < len(selected[i]); j++ {
 			rn := rand.Float64()
-			if rn < Pm { // move down inside the loop
-				fmt.Print(selected[i][j])
+			if rn < Pm {
 				r := rand.Float64()
 				delta := 0.0
 
@@ -199,7 +198,7 @@ func (sbo SortByOther) Less(i, j int) bool {
 	return sbo.fitnesses[i] < sbo.fitnesses[j]
 }
 
-func elitismReplacement(generation [][]float64, copySize int, points [][]int, offSpring [][]float64) [][]float64 {
+func replacement(generation [][]float64, copySize int, points [][]float64, offSpring [][]float64) [][]float64 {
 	selected := make([][]float64, len(generation))
 	fitnesses := make([]float64, len(generation))
 	for i := 0; i < len(generation); i++ {
@@ -219,15 +218,17 @@ func elitismReplacement(generation [][]float64, copySize int, points [][]int, of
 	}
 	return selected
 }
+
+// //////////////////////// Main Function ////////////////////////////
 func start() {
-	maxGeneration := 1
-	popSize := 50
+	maxGeneration := 1000
+	popSize := 200
 	selectionSize := 0.8 * float64(popSize)
 	copiedParentsSize := popSize - int(selectionSize)
 	lowerBound := -10
 	upperBound := 10
 
-	dat, err := os.ReadFile("input.txt")
+	dat, err := os.ReadFile("input2.txt")
 	check(err)
 	dataArray := strings.Fields(string(dat))
 
@@ -241,15 +242,15 @@ func start() {
 		degree, err := strconv.Atoi(dataArray[2])
 		check(err)
 
-		points := make([][]int, numPoints)
+		points := make([][]float64, numPoints)
 		for j := range points {
-			points[j] = make([]int, 2)
+			points[j] = make([]float64, 2)
 		}
 
 		for j := 0; j < numPoints; j++ {
-			x, err := strconv.Atoi(dataArray[3+2*j])
+			x, err := strconv.ParseFloat(dataArray[3+2*j], 64)
 			check(err)
-			y, err := strconv.Atoi(dataArray[4+2*j])
+			y, err := strconv.ParseFloat(dataArray[4+2*j], 64)
 			check(err)
 			points[j][0] = x
 			points[j][1] = y
@@ -259,14 +260,21 @@ func start() {
 
 		for j := 0; j < maxGeneration; j++ {
 			selectionPool := tournamentSelection(population, int(selectionSize), points)
-
 			crossedOverPool := crossOver(selectionPool)
 			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
-			population = elitismReplacement(population, copiedParentsSize, points, mutatedPool)
+			population = replacement(population, copiedParentsSize, points, mutatedPool)
 		}
-		fmt.Println(population)
-		fmt.Println(fitnessFunction(population[0], points))
+		fmt.Print(population[0][0])
+		for j := 1; j <= degree; j++ {
+			fmt.Print(" ", "+ ", " ", population[0][j], " x^", j)
+
+		}
+		fmt.Println()
 	}
 }
 
-func main() { start() }
+// /////////////////////////// Start ////////////////////////////////
+func main() {
+	rand.Seed(43)
+	start()
+}
