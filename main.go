@@ -273,9 +273,17 @@ func start() {
 			fmt.Print(population[0][j], " x^", j, " ", "+ ", " ")
 		}
 		fmt.Println(population[0][0])
+		fmt.Println("\n","cofficeints : ")
+		
+		for j := degree; j > 0; j-- {
+			fmt.Print(population[0][j]," "," ")
+		}
+		fmt.Println(population[0][0],"\n")
 	}
-}
+	
+	
 
+}
 // /////////////////////////// Start ////////////////////////////////
 func main() {
 	rand.Seed(43)
