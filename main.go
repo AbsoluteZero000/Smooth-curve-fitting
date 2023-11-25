@@ -252,8 +252,8 @@ func WriteBestIndividualToFile(fileName string, dataSetIndex int, coefficients [
 
 // //////////////////////// Main Function ////////////////////////////
 func start() {
-	maxGeneration := 1000
-	popSize := 200
+	maxGeneration := 800
+	popSize := 600
 	selectionSize := 0.8 * float64(popSize)
 	copiedParentsSize := popSize - int(selectionSize)
 	lowerBound := -10
@@ -300,19 +300,9 @@ func start() {
 			population = replacement(population, copiedParentsSize, points, mutatedPool)
 		}
 		individual := bestIndividual(population, points)
-		totalError := 0.0
-		N := float64(len(points))
 
-		for _, point := range points {
-			x := float64(point[0])
-			yActual := float64(point[1])
-			yCalc := calculatePolynomial(x, individual)
-			error := math.Pow(yCalc-yActual, 2)
+		mse := 1 / fitnessFunction(individual, points)
 
-			totalError += error
-		}
-
-		mse := totalError / N
 		WriteBestIndividualToFile("output.txt", i+1, individual, mse)
 	}
 
