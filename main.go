@@ -235,13 +235,15 @@ func start() {
 	dataSets, err := strconv.Atoi(dataArray[0])
 	check(err)
 	degree := 0
+	cursor := 0
 	for i := 0; i < dataSets; i++ {
-		numPoints, err := strconv.Atoi(dataArray[1])
+		cursor++
+		numPoints, err := strconv.Atoi(dataArray[cursor])
+		check(err)
+		cursor++
+		degree, err = strconv.Atoi(dataArray[cursor])
 		check(err)
 
-		degree, err = strconv.Atoi(dataArray[2])
-		check(err)
-		fmt.Print(degree)
 		points := make([][]float64, numPoints)
 		for j := range points {
 			points[j] = make([]float64, 2)
@@ -254,6 +256,7 @@ func start() {
 			check(err)
 			points[j][0] = x
 			points[j][1] = y
+			cursor += 2
 		}
 
 		population := initialize(points, degree, popSize)
