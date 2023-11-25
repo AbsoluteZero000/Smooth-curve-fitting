@@ -228,20 +228,20 @@ func start() {
 	lowerBound := -10
 	upperBound := 10
 
-	dat, err := os.ReadFile("input.txt")
+	dat, err := os.ReadFile("input2.txt")
 	check(err)
 	dataArray := strings.Fields(string(dat))
 
 	dataSets, err := strconv.Atoi(dataArray[0])
 	check(err)
-
+	degree := 0
 	for i := 0; i < dataSets; i++ {
 		numPoints, err := strconv.Atoi(dataArray[1])
 		check(err)
 
-		degree, err := strconv.Atoi(dataArray[2])
+		degree, err = strconv.Atoi(dataArray[2])
 		check(err)
-
+		fmt.Print(degree)
 		points := make([][]float64, numPoints)
 		for j := range points {
 			points[j] = make([]float64, 2)
@@ -264,12 +264,11 @@ func start() {
 			mutatedPool := mutation(crossedOverPool, lowerBound, upperBound, i, maxGeneration)
 			population = replacement(population, copiedParentsSize, points, mutatedPool)
 		}
-		fmt.Print(population[0][0])
-		for j := 1; j <= degree; j++ {
-			fmt.Print(" ", "+ ", " ", population[0][j], " x^", j)
-
+		fmt.Println("DATA SET", i+1, "\nBest Individual: ")
+		for j := degree; j > 0; j-- {
+			fmt.Print(population[0][j], " x^", j, " ", "+ ", " ")
 		}
-		fmt.Println()
+		fmt.Println(population[0][0])
 	}
 }
 
