@@ -231,7 +231,6 @@ func start() {
 	dat, err := os.ReadFile("input2.txt")
 	check(err)
 	dataArray := strings.Fields(string(dat))
-
 	dataSets, err := strconv.Atoi(dataArray[0])
 	check(err)
 	degree := 0
@@ -250,13 +249,15 @@ func start() {
 		}
 
 		for j := 0; j < numPoints; j++ {
-			x, err := strconv.ParseFloat(dataArray[3+2*j], 64)
+			cursor++
+			x, err := strconv.ParseFloat(dataArray[cursor], 64)
 			check(err)
-			y, err := strconv.ParseFloat(dataArray[4+2*j], 64)
+			cursor++
+			y, err := strconv.ParseFloat(dataArray[cursor], 64)
 			check(err)
 			points[j][0] = x
 			points[j][1] = y
-			cursor += 2
+
 		}
 
 		population := initialize(points, degree, popSize)
